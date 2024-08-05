@@ -1,19 +1,21 @@
 import whisper
-import torch
 
-audio_path="videos/TikSave.io_7396243763049286919.mp4"
+model = whisper.load_model("base")
 
-device = "cuda:0" if torch.cuda.is_available() else "cpu"
-print("加载视频")
-audio = whisper.load_audio(audio_path)
-print("视频加载完成")
+# load audio and pad/trim it to fit 30 seconds
+audio = whisper.load_audio("videos/TikSave.io_7058287800013081857.mp4")
 audio = whisper.pad_or_trim(audio)
 
-model = whisper.load_model("large-v2",download_root="./whisper_model/")
-
+# make log-Mel spectrogram and move to the same device as the model
 mel = whisper.log_mel_spectrogram(audio).to(model.device)
 
-options = whisper.DecodingOptions(beam_size=5)
+# detect the spoken language
+_, probs = model.detect_language(mel)
+print(f"Detected language: {max(probs, key=probs.get)}")
 
+# decode the audio
+options = whisper.DecodingOptions()
 result = whisper.decode(model, mel, options)
+
+# print the recognized text
 print(result.text)
